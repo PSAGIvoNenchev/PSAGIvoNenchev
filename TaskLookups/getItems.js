@@ -1,5 +1,4 @@
 SF.setFieldHidden('Result', true);
-//https://sflx.sharepoint.com/sites/AddonsOnlineSite-psc-qs-58373
 async function getItems() {
 	const encodedMasterDataList1Url = encodeURIComponent(`${SF.currentValues.siteUrl}/Lists/MasterDataList1`);
 	const encodedMasterDataList2Url = encodeURIComponent(`${SF.currentValues.siteUrl}/Lists/MasterDataList2`);
