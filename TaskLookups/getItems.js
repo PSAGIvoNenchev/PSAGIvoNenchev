@@ -24,8 +24,6 @@ async function getItems() {
 			?.split(';#')
 			.filter((value) => value);
 
-		console.log(multiChoiceValue);
-
 		if (!multiChoiceValue?.length) {
 			SF.setFieldError('MultiChoiceCompany', 'A MultiChoice is required.'); // will abort saving
 		}
