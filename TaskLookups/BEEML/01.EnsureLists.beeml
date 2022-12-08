@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- File: "01.EnsureLists.beeml" (modified by ivo.nenchev on 07.12.2022 11:35:42) -->
+<!-- File: "01.EnsureLists.beeml" (modified by ivo.nenchev on 08.12.2022 14:41:00) -->
 <BeeScript>
 	<SetWebContext url="{__SP_ROOTWEB__}">
 		<!-- Master Data lists -->
 		<EnsureList name="MasterDataList1" type="GenericList" mode="CreateOrUpdate"
 		            title="MasterDataList1"
-		            quickLaunchEnabled="true"
+		            quickLaunchEnabled="false"
 		            p_Hidden="false"
 		            p_EnableVersioning="true"
 		            p_EnableAttachments="false"
@@ -20,13 +20,16 @@
 			<!-- Data -->
 			<EnsureItem Title="Master Data Company 1-1" />
 			<EnsureItem Title="Master Data Company 1-2" />
+			<EnsureItem Title="Master Data Company 1-3" />
+			<EnsureItem Title="Master Data Company 1-4" />
+			<EnsureItem Title="Master Data Company 1-5" />
 			<!-- Views -->
 			<EnsureView name="[Default]" viewFields="Title, Modified" sortFields="Title DESC" />
 		</EnsureList>
 
 		<EnsureList name="MasterDataList2" type="GenericList" mode="CreateOrUpdate"
 		            title="MasterDataList2"
-		            quickLaunchEnabled="true"
+		            quickLaunchEnabled="false"
 		            p_Hidden="false"
 		            p_EnableVersioning="true"
 		            p_EnableAttachments="false"
@@ -41,6 +44,9 @@
 			<!-- Data -->
 			<EnsureItem Title="Master Data Company 2-1" />
 			<EnsureItem Title="Master Data Company 2-2" />
+			<EnsureItem Title="Master Data Company 2-3" />
+			<EnsureItem Title="Master Data Company 2-4" />
+			<EnsureItem Title="Master Data Company 2-5" />
 			<!-- Views -->
 			<EnsureView name="[Default]" viewFields="Title, Modified" sortFields="Title DESC" />
 		</EnsureList>
@@ -48,7 +54,7 @@
 		<!-- Context list -->
 		<EnsureList name="ResultList" type="GenericList" mode="CreateOrUpdate"
 		            title="ResultList"
-		            quickLaunchEnabled="true"
+		            quickLaunchEnabled="false"
 		            p_Hidden="false"
 		            p_EnableVersioning="true"
 		            p_EnableAttachments="false"
@@ -75,4 +81,4 @@
 	</SetWebContext>
 
 </BeeScript>
-<!-- File: "01.EnsureLists.beeml" (modified by ivo.nenchev on 07.12.2022 11:35:42) -->
+<!-- File: "01.EnsureLists.beeml" (modified by ivo.nenchev on 08.12.2022 14:41:00) -->

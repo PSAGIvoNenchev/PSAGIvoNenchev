@@ -1,17 +1,49 @@
 SF.setFieldHidden('Result', true);
-async function getItems() {
-	const encodedMasterDataList1Url = encodeURIComponent(`${SF.currentValues.siteUrl}/Lists/MasterDataList1`);
-	const encodedMasterDataList2Url = encodeURIComponent(`${SF.currentValues.siteUrl}/Lists/MasterDataList2`);
-	const masterDataListOneEndPoint = `${SF.currentValues.siteUrl}/_api/web/GetList(@listUrl)/items?@listUrl='${encodedMasterDataList1Url}'&$select=Title&$top=5000`;
-	const masterDataListTwoEndPoint = `${SF.currentValues.siteUrl}/_api/web/GetList(@listUrl)/items?@listUrl='${encodedMasterDataList2Url}'&$select=Title&$top=5000`;
 
-	const [responseOne, responseTwo] = await Promise.all([SF.request(masterDataListOneEndPoint), SF.request(masterDataListTwoEndPoint)]);
+const encodedMasterDataList1Url = encodeURIComponent(`${SF.currentValues.siteUrl}/Lists/MasterDataList1`);
+const encodedMasterDataList2Url = encodeURIComponent(`${SF.currentValues.siteUrl}/Lists/MasterDataList2`);
 
-	const finalValues = [...responseOne.value, ...responseTwo.value];
+const masterDataListEndPoints = [
+	`${SF.currentValues.siteUrl}/_api/web/GetList(@listUrl)/items?@listUrl='${encodedMasterDataList1Url}'&$select=Title&$top=1`,
+	`${SF.currentValues.siteUrl}/_api/web/GetList(@listUrl)/items?@listUrl='${encodedMasterDataList2Url}'&$select=Title&$top=1`,
+];
+
+async function getItems(masterDataListEndPoint, callBack) {
+	const content = await SF.request(masterDataListEndPoint, {
+		method: 'GET',
+		headers: {
+			Accept: 'application/json;odata=nometadata',
+			'Content-type': 'application/json;odata=nometadata',
+			'odata-version': '',
+		},
+	});
+
+	const finalResult = content.value.filter((item) => item.Title.length);
+
+	callBack(finalResult);
+
+	const nextUrlPage = content['odata.nextLink'];
+
+	if (nextUrlPage) {
+		await getItems(nextUrlPage, callBack);
+	}
+}
+
+async function initialCall() {
+	const finalResult = [];
+
+	await getItems(masterDataListEndPoints[0], (items) => {
+		finalResult.push(...items);
+	});
+	await getItems(masterDataListEndPoints[1], (items) => {
+		finalResult.push(...items);
+	});
+
+	console.log(finalResult);
 
 	const choiceOptions = [];
 
-	finalValues.forEach((element, index) => {
+	finalResult.forEach((element, index) => {
 		choiceOptions.push({ key: `${index}`, text: element.Title });
 	});
 
@@ -28,16 +60,10 @@ async function getItems() {
 			SF.setFieldError('MultiChoiceCompany', 'A MultiChoice is required.'); // will abort saving
 		}
 
-		const selectedCompanies = multiChoiceValue.map((value) => finalValues[value].Title).join(';');
+		const selectedCompanies = multiChoiceValue.map((value) => finalResult[value].Title).join(';');
 
 		SF.setFieldValue('Result', selectedCompanies); // will change the value to be saved
-
-		// to cancel silently (make sure the user gets some form of feedback, s.g. SF.showNotification):
-		//args.cancel = true;
 	});
 }
 
-getItems();
-
-// Note: this can also appear in the list-view like this, but this code needs to be added to a UI.js scoped to Filter form mode (or via Global Add-On).
-// To create Filter form Bottom code, set FormType empty and Title=* (or =Filter). Note you don't need a Form.xml for this (to use the default Filter form).
+initialCall();
