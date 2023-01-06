@@ -57,7 +57,7 @@ export async function addCompanies(_rules) {
 		return;
 	}
 
-	//Updating items to add the company names into the empty result field
+	//Updating items to add the company names if they are available into the empty result field
 	for (const emptyResultItem of emptyResultItems) {
 		let finalResultValue = '';
 
