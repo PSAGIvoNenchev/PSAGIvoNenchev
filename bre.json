@@ -1,0 +1,64 @@
+{
+	"defaultValuesFolderRoot": "./",
+	"defaultValuesDirectories": ["./", "TaskLookUps"],
+	"EnableOAuth": false,
+	"AppId": null,
+	"SiteUrl": "https://sflx.sharepoint.com/sites/AddonsOnlineSite-psc-qs-59831",
+	"LoginTenant": null,
+	"Scopes": null,
+	"MicrosoftGraphScopes": null,
+	"LoggingConfiguration": {
+		"DefaultLogLevel": "Debug",
+		"LoggerConfiguration": [
+			{
+				"LoggerId": "InternalConsoleLogger",
+				"LogLevel": "Debug"
+			},
+			{
+				"LoggerId": "InternalRestListLogger",
+				"LogLevel": "Debug"
+			}
+		]
+	},
+	"Elevated": {
+		"User": "testuser-en@sflx.onmicrosoft.com",
+		"Password": "{==sP7XDBclizMC1Q/vrbKELw==}"
+	},
+	"User": {
+		"User": "testuser-en@sflx.onmicrosoft.com",
+		"Password": "{==sP7XDBclizMC1Q/vrbKELw==}"
+	},
+	"features": [
+		{
+			"name": "CSOM_NewUrlParametersFeature",
+			"guid": "51394d8f-ed0d-4d26-8d3c-042f8dcd5052",
+			"enabled": false
+		},
+		{
+			"name": "Csom_SingleRequestFeature",
+			"guid": "d760c408-95df-4153-86c1-4b0ac46805c0",
+			"enabled": false
+		},
+		{
+			"name": "JavaScriptFeature",
+			"guid": "985ff5cd-8d0b-49b5-acc8-e2e2d8a4f184",
+			"enabled": true
+		},
+		{
+			"name": "RestActionAsyncFeature",
+			"guid": "fc302d3f-ed23-4783-98f7-a8c49008c954",
+			"enabled": false
+		},
+		{
+			"name": "Spo_ActivatorFeature",
+			"guid": "d9e93b74-beae-44d0-b40a-6f8f7a3121a1",
+			"enabled": false
+		},
+		{
+			"name": "Ssom_SpListQueryListAction_EmptyPlaceholders",
+			"guid": "8a0e2ecd-d04d-47a7-b03e-3febc5d864f7",
+			"enabled": false
+		}
+	],
+	"DebugPort": 9222
+}
