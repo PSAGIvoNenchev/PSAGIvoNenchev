@@ -1,5 +1,5 @@
-/// <reference path="../../src/Core/ShareflexAddons/@types/ShareflexRules.d.ts" />
-/// <reference path="../../src/Core/ShareflexAddons/@types/ShareflexAddons.d.ts" />
+/// <reference path="../../../src/Core/ShareflexAddons/@types/ShareflexRules.d.ts" />
+/// <reference path="../../../src/Core/ShareflexAddons/@types/ShareflexAddons.d.ts" />
 
 const configuration = {
 	listUrl: '/Lists/ResultList',

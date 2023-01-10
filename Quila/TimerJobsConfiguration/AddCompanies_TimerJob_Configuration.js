@@ -1,7 +1,7 @@
 //@ts-check
-/// <reference path="../src/Core/ShareflexAddons/@types/ShareflexRules.d.ts" />
-/// <reference path="../src/Core/ShareflexAddons/@types/ShareflexAddons.d.ts" />
-/// <reference path="../src/Core/ShareflexAddons/@types/ShareflexPermissions.d.ts" />
+/// <reference path="../../src/Core/ShareflexAddons/@types/ShareflexRules.d.ts" />
+/// <reference path="../../src/Core/ShareflexAddons/@types/ShareflexAddons.d.ts" />
+/// <reference path="../../src/Core/ShareflexAddons/@types/ShareflexPermissions.d.ts" />
 
 import ShareflexRules from 'ShareflexRules';
 

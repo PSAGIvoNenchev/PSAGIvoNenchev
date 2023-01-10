@@ -1,9 +1,15 @@
 {
 	"defaultValuesFolderRoot": "./",
-	"defaultValuesDirectories": ["./", "TaskLookUps"],
+	"defaultValuesDirectories": [
+		"./",
+		"Quila\\TaskLookUps",
+		"..\\..\\src\\SiteCollectionDefaults\\Custom",
+		"..\\..\\src\\SiteCollectionDefaults\\Custom\\ShareflexAddons",
+		"..\\..\\src\\SiteCollectionDefaults\\Custom\\ShareflexAddons\\SFpermissions"
+	],
 	"EnableOAuth": false,
 	"AppId": null,
-	"SiteUrl": "https://sflx.sharepoint.com/sites/AddonsOnlineSite-psc-qs-59831",
+	"SiteUrl": "https://sxdev2.sharepoint.com/sites/QualityOnlineSite-psc-qs-59969",
 	"LoginTenant": null,
 	"Scopes": null,
 	"MicrosoftGraphScopes": null,
@@ -21,11 +27,11 @@
 		]
 	},
 	"Elevated": {
-		"User": "testuser-en@sflx.onmicrosoft.com",
+		"User": "testuser-en@sxdev2.onmicrosoft.com",
 		"Password": "{==sP7XDBclizMC1Q/vrbKELw==}"
 	},
 	"User": {
-		"User": "testuser-en@sflx.onmicrosoft.com",
+		"User": "testuser-en@sxdev2.onmicrosoft.com",
 		"Password": "{==sP7XDBclizMC1Q/vrbKELw==}"
 	},
 	"features": [
