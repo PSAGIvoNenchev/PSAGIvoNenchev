@@ -8,16 +8,19 @@
  * @returns {Promise<import('ShareflexPermissions').SetConfigCustomFnResult>}
  */
 export async function customFnForOssenberg(options) {
+	const { addons, roleDefObj, listUrl, itemId } = options;
+	const rules = addons.rules;
+
 	const configuration = {
 		peRolesUrl: '/Administration/Lists/peRoles',
 		fields: {
-			clientsFieldName: 'Clients/Title',
-			departmentsFieldName: 'Departments/Title',
+			clientsFieldName: 'qmClient',
+			departmentsFieldName: 'qmDepartment',
 		},
 	};
 
-	const { addons, roleDefObj, listUrl, itemId } = options;
-	const rules = addons.rules;
+	const clientField = configuration.fields.clientsFieldName;
+	const departmentField = configuration.fields.departmentsFieldName;
 
 	rules.logInfo('test start');
 
@@ -35,31 +38,46 @@ export async function customFnForOssenberg(options) {
 	const getAddedItem = await rules.getItemById({
 		listUrl,
 		itemId,
-		fields: `ID,${configuration.fields.clientsFieldName},${configuration.fields.departmentsFieldName}`,
+		fields: `${clientField},${departmentField}`,
 	});
+	//storing the full client names from the field qmClient
+	let fullClientNames = [];
+	//storing the full department names from the field departmentField
+	let departmentNames = [];
 
-	const clientNames = [];
-	const departmentNames = [];
+	//checking if there are more than two clients added to the field qmClient
+	if (getAddedItem[clientField].includes('; ')) {
+		fullClientNames = getAddedItem[clientField].split('; ');
+	} else {
+		fullClientNames.push(getAddedItem[clientField]);
+	}
+
+	//checking if there are more than two departments added to the field departmentField
+	if (getAddedItem[departmentField].includes('; ')) {
+		departmentNames = getAddedItem[departmentField].split('; ');
+	} else {
+		departmentNames.push(getAddedItem[departmentField]);
+	}
+
+	//storing the short client names 'Erwin Kowsky GmbH & Co. KG' => 'Erwin'
+	const shortClientNames = [];
 
 	//getting the first part of the clients name/title 'Erwin Kowsky GmbH & Co. KG' => 'Erwin'
-	for (const clientName of getAddedItem.Clients) {
-		const firstPartOfClientName = clientName.Title.split(' ');
-		clientNames.push(firstPartOfClientName[0]);
-	}
-	//getting the department names only
-	for (const departmentName of getAddedItem.Departments) {
-		departmentNames.push(departmentName.Title);
+	for (const clientName of fullClientNames) {
+		const shortClientName = clientName.split(' ');
+		shortClientNames.push(shortClientName[0]);
 	}
 
+	//storing the names of the matched Role
 	const getAddedRoleNames = [];
 
 	const contributeMembers = [];
 	const readMembers = [];
 
 	//getting only these Roles that are matched by the condition bellow
-	for (const clientName of clientNames) {
+	for (const clientRoleNames of shortClientNames) {
 		for (const departmentName of departmentNames) {
-			getAddedRoleNames.push(...getExistingRoleNames.filter((roleName) => roleName.Title.startsWith(clientName) && roleName.Title.includes(departmentName)));
+			getAddedRoleNames.push(...getExistingRoleNames.filter((roleName) => roleName.Title.startsWith(clientRoleNames) && roleName.Title.includes(departmentName)));
 		}
 	}
 
@@ -72,7 +90,9 @@ export async function customFnForOssenberg(options) {
 		}
 	}
 
-	await rules.breakItemRoleInheritance({ listUrl, itemId, clear: true });
+	await rules.resetItemRoleInheritance({ listUrl, itemId, clear: true });
+
+	await rules.breakItemRoleInheritance({ listUrl, itemId });
 
 	//creating the virtual permission set that will be used to assign the correct item permissions
 	let permissionMappings = rules.createPermissionMappings();
