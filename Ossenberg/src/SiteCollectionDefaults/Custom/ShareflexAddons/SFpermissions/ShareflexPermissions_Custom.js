@@ -1,6 +1,6 @@
-/// <reference path="../../../../../src/Core/ShareflexAddons/@types/ShareflexRules.d.ts" />
-/// <reference path="../../../../../src/Core/ShareflexAddons/@types/ShareflexAddons.d.ts" />
-/// <reference path="../../../../../src/Core/ShareflexAddons/@types/ShareflexFlow.d.ts" />
+/// <reference path="../../../../../../src/Core/ShareflexAddons/@types/ShareflexRules.d.ts" />
+/// <reference path="../../../../../../src/Core/ShareflexAddons/@types/ShareflexAddons.d.ts" />
+/// <reference path="../../../../../../src/Core/ShareflexAddons/@types/ShareflexFlow.d.ts" />
 
 /**
  * EXAMPLE: custom function for Rule Set Configuration type 'P-900'
@@ -10,6 +10,8 @@
 export async function customFnForOssenberg(options) {
 	const { addons, roleDefObj, listUrl, itemId } = options;
 	const rules = addons.rules;
+	/** @type {import('ShareflexPermissions').default} */
+	const permissions = addons.initPermissionsAPI();
 
 	const configuration = {
 		peRolesUrl: '/Administration/Lists/peRoles',
@@ -65,47 +67,56 @@ export async function customFnForOssenberg(options) {
 	//getting the first part of the clients name/title 'Erwin Kowsky GmbH & Co. KG' => 'Erwin'
 	for (const clientName of fullClientNames) {
 		const shortClientName = clientName.split(' ');
-		shortClientNames.push(shortClientName[0]);
+		if (shortClientName[1] == 'GmbH' || shortClientName[1] == 'UG') {
+			shortClientNames.push(shortClientName[0]);
+		} else {
+			shortClientNames.push(shortClientName.slice(0, 2).join(''));
+		}
 	}
 
 	//storing the names of the matched Role
 	const getAddedRoleNames = [];
 
+	//filter departments to check if there is any Department name added to the field
+	const filteredDepartments = departmentNames.filter((departmentName) => departmentName.length);
+
+	//getting only these Roles that either have departments added or not
+	for (const clientRoleName of shortClientNames) {
+		if (filteredDepartments.length) {
+			for (const departmentName of filteredDepartments) {
+				//getting the roles and departments
+				getAddedRoleNames.push(...getExistingRoleNames.filter((roleName) => roleName.Title.startsWith(clientRoleName) && roleName.Title.includes(departmentName)));
+			}
+		} else {
+			//getting the roles only => Rheima-L, Rheima-M
+			getAddedRoleNames.push(...getExistingRoleNames.filter((roleName) => roleName.Title === `${clientRoleName}-L` || roleName.Title === `${clientRoleName}-M`));
+		}
+	}
+
 	const contributeMembers = [];
 	const readMembers = [];
 
-	//getting only these Roles that are matched by the condition bellow
-	for (const clientRoleNames of shortClientNames) {
-		for (const departmentName of departmentNames) {
-			getAddedRoleNames.push(...getExistingRoleNames.filter((roleName) => roleName.Title.startsWith(clientRoleNames) && roleName.Title.includes(departmentName)));
-		}
-	}
-
-	//sorting which Role must have Contribute or Read rights
+	//sorting which Role must have Contribute or Read rights and get their SharePoint Group IDs
 	for (const roleName of getAddedRoleNames) {
 		if (roleName.Title.endsWith('-L')) {
-			readMembers.push(roleName.Title);
+			let readerRole = await permissions.getRoles({ roleName: roleName.Title });
+			readMembers.push(parseInt(readerRole.rolesObj[roleName.Title].peSharePointGroupID));
 		} else if (roleName.Title.endsWith('-M')) {
-			contributeMembers.push(roleName.Title);
+			let contributeRole = await permissions.getRoles({ roleName: roleName.Title });
+			contributeMembers.push(parseInt(contributeRole.rolesObj[roleName.Title].peSharePointGroupID));
 		}
 	}
 
-	await rules.resetItemRoleInheritance({ listUrl, itemId, clear: true });
+	/** @type {import('ShareflexPermissions').SetConfigCustomFnResult} */
+	let result = {};
 
-	await rules.breakItemRoleInheritance({ listUrl, itemId });
+	// check exists the role definition
+	if (contributeRoleDefId && readRoleDefId) {
+		// add the two Contribute and Read members to the item permissions
+		result.add = {};
+		result.add[contributeRoleDefId] = contributeMembers;
+		result.add[readRoleDefId] = readMembers;
+	}
 
-	//creating the virtual permission set that will be used to assign the correct item permissions
-	let permissionMappings = rules.createPermissionMappings();
-
-	permissionMappings.addRoleDefId(contributeRoleDefId, contributeMembers);
-	permissionMappings.addRoleDefId(readRoleDefId, readMembers);
-
-	const result = await rules.assignItemPermissions({
-		listUrl,
-		itemId,
-		permissionMappings,
-	});
-
-	rules.logInfo('test ends');
-	return Promise.resolve(result);
+	return result;
 }
