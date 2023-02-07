@@ -59,7 +59,6 @@ async function createItems(options) {
 		itemId: 3,
 		fields: 'qmClient,qmDepartment',
 	});
-	debugger;
 
 	let permissionMappings = rules.createPermissionMappings();
 
@@ -71,7 +70,7 @@ async function createItems(options) {
 		itemId: 3,
 		permissionMappings,
 	});
-	debugger;
+
 	return assignPermissions;
 }
 

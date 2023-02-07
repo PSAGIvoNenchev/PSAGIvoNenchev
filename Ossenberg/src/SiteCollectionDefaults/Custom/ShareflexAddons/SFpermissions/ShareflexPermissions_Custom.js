@@ -87,10 +87,8 @@ export async function customFnForOssenberg(options) {
 				//getting the roles and departments
 				getAddedRoleNames.push(...getExistingRoleNames.filter((roleName) => roleName.Title.startsWith(clientRoleName) && roleName.Title.includes(departmentName)));
 			}
-		} else {
-			//getting the roles only => Rheima-L, Rheima-M
-			getAddedRoleNames.push(...getExistingRoleNames.filter((roleName) => roleName.Title === `${clientRoleName}-L` || roleName.Title === `${clientRoleName}-M`));
 		}
+		getAddedRoleNames.push(...getExistingRoleNames.filter((roleName) => roleName.Title === `${clientRoleName}-L` || roleName.Title === `${clientRoleName}-M`));
 	}
 
 	const contributeMembers = [];
