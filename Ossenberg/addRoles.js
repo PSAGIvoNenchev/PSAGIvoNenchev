@@ -47,14 +47,14 @@ export function initTestCaseProperties(options) {
  * @param {import('ShareflexRules').TestCaseOptions} options
  */
 async function createItems(options) {
-	const { permissions, roleDefObj } = initTestCaseProperties(options);
+	const { roleDefObj } = initTestCaseProperties(options);
 
 	const listUrl = rules.Utils.combineUrls(rules.Context.siteUrl, '/Workspace/DocumentsNew');
 	//getting the ID's of the required roles
 	let contributeRoleDefId = roleDefObj.getRoleDefId('Contribute');
 	let readRoleDefId = roleDefObj.getRoleDefId('Read');
 
-	const item = await rules.getItemById({
+	await rules.getItemById({
 		listUrl,
 		itemId: 3,
 		fields: 'qmClient,qmDepartment',
