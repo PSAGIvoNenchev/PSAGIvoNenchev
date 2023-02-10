@@ -27,7 +27,6 @@ export async function convertDocuments(_rules) {
 		listUrl,
 		fields: `ID,FileLeafRef,qmRecordNo,qmDocumentType`,
 		filter: `substringof('.docx',FileLeafRef) and qmDocumentType ne 'Formular' and qmDocumentType ne 'Form'`,
-		//filter: `substringof('.docx',FileLeafRef)`,
 		processedItemsLimit,
 		callback: ({ items }) => {
 			resultItems.push(...items);
@@ -55,11 +54,11 @@ export async function convertDocuments(_rules) {
 	const fileName = resultItems[0].FileLeafRef;
 
 	//Copying the item requires the full path of that file including the filename + extension (sourcePath) and where the file must be copied (destinationPath)
-	// const copyItem = await rules.copyDocument({
-	// 	sourcePath: `${listUrl}/${folderName}/${fileName}`,
-	// 	destinationPath: `${conversionJobsUrl}/${fileName}`,
-	// 	copyAuthorAndCreated: true,
-	// });
+	const copyItem = await rules.copyDocument({
+		sourcePath: `${listUrl}/${folderName}/${fileName}`,
+		destinationPath: `${conversionJobsUrl}/${fileName}`,
+		copyAuthorAndCreated: true,
+	});
 
 	return copyItem;
 }
