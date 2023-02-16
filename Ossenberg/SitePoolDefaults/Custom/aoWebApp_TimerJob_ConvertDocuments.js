@@ -5,11 +5,6 @@ const configuration = {
 	listUrl: '/Documents',
 	conversionJobsUrl: '/Workspace/ConversionJobs',
 	masterBafTimerJobConfigUrl: '/pscBAF/TimerJobsConfiguration',
-	lookUpFields: {
-		lookUpFieldName1: 'DefaultLookUp1/Title',
-		lookUpFieldName2: 'DefaultLookUp2/Title',
-	},
-	resultFieldName: 'Result',
 };
 
 /**
@@ -30,8 +25,8 @@ export async function convertDocuments(_rules) {
 	//Getting items that are filtered by file extension which is part from the 'FileLeafRef' field
 	await rules.processItems({
 		listUrl,
-		fields: `ID,FileLeafRef,qmRecordNo`,
-		filter: `substringof('.docx',FileLeafRef)`,
+		fields: `ID,FileLeafRef,qmRecordNo,qmDocumentType`,
+		filter: `substringof('.docx',FileLeafRef) and qmDocumentType ne 'Formular' and qmDocumentType ne 'Form'`,
 		processedItemsLimit,
 		callback: ({ items }) => {
 			resultItems.push(...items);
