@@ -1,0 +1,568 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!--SCRIPT: qmWebApp_TimerJob_SITES_DMS_Mails-->
+<tasksConfiguration>
+
+  <placeholders>
+    <placeholder key="phCustom_DateFormat" value="dd.MM.yyyy" />
+    <placeholder key="phCustom_MailSubject" value="pscQuality Info Mail" />
+    <placeholder key="phCustom_MailSend" value="true" />
+    <placeholder key="phCustom_MailSendPerChapter" value="false" />
+  </placeholders>
+
+  <!--TASKS-->
+  <tasks>
+    <!--TASK: Empty pscBreLog-->
+    <task id="Empty pscBreLog" onError="abort">
+      <!--action type="SpItemSetFieldsAction" listUrl="{List.Url}" itemId="{ListItem.Id}" incrementVersion="false" fieldName1="pscBreLog" value1="" />-->
+    </task>
+
+    <!--TASK: Set Global Placeholder -->
+    <task id="Set Global Placeholder" onError="abort">
+      <action type="BuildDateTimePlaceholderAction" placeholderName="phDay" dateTime="{System.Now}" scope="global"/>
+      <action type="ConvertDateAction" placeholderName="phDay" dateFormat="dd" scope="global" />
+
+      <action type="BuildDateTimePlaceholderAction" placeholderName="phMonth" dateTime="{System.Now}" scope="global"/>
+      <action type="ConvertDateAction" placeholderName="phMonth" dateFormat="MM" scope="global" />
+
+      <action type="BuildDateTimePlaceholderAction" placeholderName="phYear" dateTime="{System.Now}" scope="global"/>
+      <action type="ConvertDateAction" placeholderName="phYear" dateFormat="yyyy" scope="global" />
+    </task>
+
+    <!--TASK: Delete invalid entries in MailQueue -->
+    <task id="Delete invalid entries" onError="abort">
+      <action type="StartStopWatchAction" id="MyStopwatch" />
+      <action type="WriteInfoAction" text="Start {task.id}: {MyStopwatch.Start}" />
+
+      <iterator type="SpListQueryItemsIterator" id="itMailQueue_Invalid" listUrl="{phUrlMailQueue}" searchSubfolders="true">
+        <camlQuery>
+          <Where>
+            <Or>
+              <Eq>
+                <FieldRef Name="ToMail" />
+                <Value Type="Text">{Function.ToMail}</Value>
+              </Eq>
+              <IsNull>
+                <FieldRef Name="ToMail" />
+              </IsNull>
+            </Or>
+          </Where>
+        </camlQuery>
+
+        <action type="SpItemDeleteAction" listUrl="{phUrlMailQueue}" itemId="{itMailQueue_Invalid.ListItem.ID}" recycle="false" />
+
+      </iterator>
+
+      <action type="StopStopwatchAction" id="MyStopwatch" />
+      <action type="WriteInfoAction" text="End {task.id}: {MyStopwatch.End}" />
+      <action type="WriteInfoAction" text="Time used: {MyStopwatch.TimeUsed.Hours}:{MyStopwatch.TimeUsed.Minutes}:{MyStopwatch.TimeUsed.Seconds}" />
+    </task>
+
+    <!--TASK: Get Placeholder Columns per Template-->
+    <task id="GetTemplatePlaceholders" onError="abort">
+      <!--Durch Mail Templates iterierien-->
+      <iterator type="SpListQueryItemsIterator" id="itMailTemplates" listUrl="{phUrlMailTemplates}">
+        <camlQuery>
+          <Where>
+            <Eq>
+              <FieldRef Name="Active" />
+              <Value Type="Text">True</Value>
+            </Eq>
+          </Where>
+        </camlQuery>
+
+        <action type="SetPlaceholderAction" placeholderName="phTemplateId" value="{itMailTemplates.ListItem.Id}" scope="global" />
+        <action type="SetPlaceholderAction" placeholderName="phTemplateColumnsResolved{phTemplateId}" value="false" scope="global" />
+
+        <action type="SetPlaceholderAction" placeholderName="phItemDateTimeColumns{phTemplateId}" value="" scope="global" />
+        <action type="SetPlaceholderAction" placeholderName="phItemUserColumns{phTemplateId}" value="" scope="global" />
+
+        <action type="SetPlaceholderAction" placeholderName="phParentDateTimeColumns{phTemplateId}" value="" scope="global" />
+        <action type="SetPlaceholderAction" placeholderName="phParentUserColumns{phTemplateId}" value="" scope="global" />
+
+        <!--<action type="WriteInfoAction" text="Mail Template: {phTemplateId} / {itMailTemplates.ListItem.Title}" />-->
+
+        <action type="BuildPlaceholderAction" placeholderName="phMailChapter">
+          <build>
+            <text value="{itMailTemplates.ListItem.Body}">
+              <replace oldValue="%7b" newValue="{" />
+              <replace oldValue="%7d" newValue="}" />
+              <replace oldValue="&amp;#123;" newValue="{" />
+              <replace oldValue="&amp;#125;" newValue="}" />
+            </text>
+          </build>
+        </action>
+
+        <action type="SetPlaceholderAction" placeholderName="phMailChapter" value="{phMailChapter}" replace="{Item." replaceWith="{phItem." scope="local" />
+        <action type="SetPlaceholderAction" placeholderName="phMailChapter" value="{phMailChapter}" replace="{ParentItem." replaceWith="{phParentItem." scope="local" />
+
+        <!--<action type="SetPlaceholderAction" placeholderName="phRowTemplate{phTemplateId}" value="{phMailChapter}" scope="local" />-->
+
+        <!--split mit <tr id="contentRow">-->
+        <action type="SetStringSplitPlaceholderAction" placeholderName="phHeader{phTemplateId}" value="{phMailChapter}" splitSeparator="&lt;tr id=&quot;contentRow&quot;&gt;" endIndex="0" scope="global"/>
+
+        <action type="SetStringSplitPlaceholderAction" placeholderName="phTemp" value="{phMailChapter}" splitSeparator="&lt;tr id=&quot;contentRow&quot;&gt;" startIndex="1" />
+        <!--split mit </tr>-->
+        <action type="SetStringSplitPlaceholderAction" placeholderName="phRowTemplate{phTemplateId}" value="{phTemp}" splitSeparator="&lt;/tr&gt;" endIndex="0" />
+        <action type="SetStringSplitPlaceholderAction" placeholderName="phFooter{phTemplateId}" value="{phTemp}" splitSeparator="&lt;/tr&gt;" startIndex="1" scope="global" />
+
+
+        <!--Replace klammern, damit Platzhalter auch in URLs aufgelöst werden können-->
+        <action type="BuildPlaceholderAction" placeholderName="phRowTemplate{phTemplateId}">
+          <build>
+            <text value="{phRowTemplate{phTemplateId}}">
+              <replace oldValue="%7b" newValue="{" />
+              <replace oldValue="%7d" newValue="}" />
+              <replace oldValue="&amp;#123;" newValue="{" />
+              <replace oldValue="&amp;#125;" newValue="}" />
+            </text>
+          </build>
+        </action>
+
+        <!--split vorgaben wieder hinzufügen-->
+        <action type="SetPlaceholderAction" placeholderName="phRowTemplate{phTemplateId}" scope="global">
+          <value>
+            <tr id="contentRow">
+              {phRowTemplate{phTemplateId}}
+            </tr>
+          </value>
+        </action>
+
+        <!--<action type="WriteInfoAction" text="phHeader{phTemplateId} {phHeader{phTemplateId}}" />-->
+        <!--<action type="WriteInfoAction" text="phFooter{phTemplateId} {phFooter{phTemplateId}}" />-->
+        <!--<action type="WriteInfoAction" text="phRowTemplate{phTemplateId} {phRowTemplate{phTemplateId}}" />-->
+
+        <action type="SetPlaceholderAction" placeholderName="phItemColumns{phTemplateId}" value="" scope="global"/>
+        <action type="SetPlaceholderAction" placeholderName="phParentColumns{phTemplateId}" value="" scope="global"/>
+
+        <!-- Item Columns Extraction-->
+        <constraint type="ValueContainsConstraint" value1="{phRowTemplate{phTemplateId}}" value2="phItem.">
+          <true>
+            <action type="SetStringSplitPlaceholderAction" placeholderName="phItems{phTemplateId}" value="{phRowTemplate{phTemplateId}}" splitSeparator="phItem." separator="|" startIndex="1"/>
+            <iterator type="StringSplitIterator" id="itString" text="{phItems{phTemplateId}}" separator="|" removeEmptyEntries="true">
+              <action type="SetStringSplitPlaceholderAction" placeholderName="phTemp" value="{itString.Value}" splitSeparator="}" endIndex="0"/>
+              <action type="SetStringSplitPlaceholderAction" placeholderName="phTemp" value="{phTemp}" splitSeparator="%7d" endIndex="0"/>
+
+              <action type="SetPlaceholderAction" placeholderName="phItemColumns{phTemplateId}" value="{phItemColumns{phTemplateId}}|{phTemp}" scope="global"/>
+            </iterator>
+          </true>
+        </constraint>
+
+        <!-- Parent Item Columns Extraction-->
+        <constraint type="ValueContainsConstraint" value1="{phRowTemplate{phTemplateId}}" value2="phParentItem.">
+          <true>
+            <action type="SetStringSplitPlaceholderAction" placeholderName="phParentItems{phTemplateId}" value="{phRowTemplate{phTemplateId}}" splitSeparator="phParentItem." separator="|" startIndex="1"/>
+            <iterator type="StringSplitIterator" id="itString" text="{phParentItems{phTemplateId}}" separator="|" removeEmptyEntries="true">
+              <action type="SetStringSplitPlaceholderAction" placeholderName="phTemp" value="{itString.Value}" splitSeparator="}" endIndex="0"/>
+              <action type="SetStringSplitPlaceholderAction" placeholderName="phTemp" value="{phTemp}" splitSeparator="%7d" endIndex="0"/>
+
+              <action type="SetPlaceholderAction" placeholderName="phParentColumns{phTemplateId}" value="{phParentColumns{phTemplateId}}|{phTemp}" scope="global"/>
+            </iterator>
+          </true>
+        </constraint>
+
+        <!--<action type="WriteInfoAction" text="phItemColumns{phTemplateId} {phItemColumns{phTemplateId}}" />-->
+        <!--<action type="WriteInfoAction" text="phParentColumns{phTemplateId} {phParentColumns{phTemplateId}}" />-->
+
+      </iterator>
+    </task>
+
+    <!--TASK: Create entries in MailTracking -->
+    <task id="CreateMailTracking" onError="abort">
+      <action type="StartStopWatchAction" id="MyStopwatch" />
+      <action type="WriteInfoAction" text="Start {task.id}: {MyStopwatch.Start}" />
+
+      <!--Alle User bzw. gruppen aus der Liste MailQueue ermitteln-->
+      <action type="SetPlaceholderAction" placeholderName="phUsersList" value="|" scope="global"/>
+      <iterator type="SpListQueryItemsIterator" id="itMailQueue_GetUsers" listUrl="{phUrlMailQueue}" searchSubfolders="true">
+        <camlQuery>
+          <Where>
+            <!--<Eq>
+              <FieldRef Name="ToMail" />
+              <Value Type="Text">???</Value>
+            </Eq>-->
+          </Where>
+        </camlQuery>
+
+        <action type="SetPlaceholderAction" placeholderName="phUserMail" value="{itMailQueue_GetUsers.ListItem.ToMail}" scope="global" />
+
+        <constraint type="ValueNotContainsConstraint" value1="{phUsersList}" value2="|{phUserMail}|">
+          <true>
+            <action type="BuildPlaceholderAction" placeholderName="phUsersList" scope="global">
+              <build>
+                <text value="{phUsersList}"/>
+                <text value="{phUserMail}"/>
+                <text value="|"/>
+              </build>
+            </action>
+          </true>
+        </constraint>
+      </iterator>
+
+      <!--Notification pro User ermitteln -->
+      <iterator type="StringSplitIterator" id="itStringUsers" text="{phUsersList}" separator="|" removeEmptyEntries="true">
+        <!--<action type="WriteInfoAction" text="User Mail: {itStringUsers.Value}" />-->
+        <action type="SetPlaceholderAction" placeholderName="phUserMail" value="{itStringUsers.Value}" scope="global" />
+        <action type="SetPlaceholderAction" placeholderName="phItemPerUserFound" value="false" scope="global" />
+
+        <action type="SetPlaceholderAction" placeholderName="phMailBody" value="" scope="local" />
+
+        <!--Durch Mail Templates iterierien-->
+        <iterator type="SpListQueryItemsIterator" id="itMailTemplates" listUrl="{phUrlMailTemplates}">
+          <camlQuery>
+            <Where>
+              <Eq>
+                <FieldRef Name="Active" />
+                <Value Type="Text">True</Value>
+              </Eq>
+            </Where>
+          </camlQuery>
+
+          <action type="SetPlaceholderAction" placeholderName="phTemplateId" value="{itMailTemplates.ListItem.Id}" scope="global" />
+          <action type="SetPlaceholderAction" placeholderName="phItemFound{phTemplateId}" value="false" scope="global" />
+
+          <action type="SetPlaceholderAction" placeholderName="phMailBody{phTemplateId}" value="{phHeader{phTemplateId}}" scope="global" />
+
+          <!--Alle Items ermitteln die für diesen User und MailChapter vorliegen-->
+          <action type="SetPlaceholderAction" placeholderName="phItemIdList" value="|" scope="global"/>
+
+          <!--Mail Queue Iterator-->
+          <iterator type="SpListQueryItemsIterator" id="itMailQueue" listUrl="{phUrlMailQueue}">
+            <camlQuery>
+              <OrderBy>
+                <FieldRef Name="ParentItemId" Ascending="true" />
+                <FieldRef Name="ID" Ascending="false" />
+              </OrderBy>
+              <Where>
+                <And>
+                  <Eq>
+                    <FieldRef Name="MailChapter" />
+                    <Value Type="Text">{itMailTemplates.ListItem.Title}</Value>
+                  </Eq>
+                  <Eq>
+                    <FieldRef Name="ToMail" />
+                    <Value Type="Text">{phUserMail}</Value>
+                  </Eq>
+                </And>
+              </Where>
+            </camlQuery>
+
+            <constraint type="ValueNotContainsConstraint" value1="{phItemIdList}" value2="|{itMailQueue.ListItem.ItemId}|">
+              <true>
+                <action type="BuildPlaceholderAction" placeholderName="phItemIdList" scope="global">
+                  <build>
+                    <text value="{phItemIdList}"/>
+                    <text value="{itMailQueue.ListItem.ItemId}"/>
+                    <text value="|"/>
+                  </build>
+                </action>
+
+                <action type="SetPlaceholderAction" placeholderName="phQuery" scope="global">
+                  <value>
+                    <Eq>
+                      <FieldRef Name="ID"></FieldRef>
+                      <Value Type="Text">{itMailQueue.ListItem.ItemId}</Value>
+                    </Eq>
+                  </value>
+                </action>
+
+                <constraint type="ValueNotEmptyConstraint" value="{itMailQueue.ListItem.Condition}">
+                  <true>
+                    <action type="SetPlaceholderAction" placeholderName="phQuery" scope="global">
+                      <value>
+                        <And>
+                          {phQuery}
+                          {itMailQueue.ListItem.Condition}
+                        </And>
+                      </value>
+                    </action>
+                  </true>
+                </constraint>
+
+                <iterator type="SpListQueryItemsIterator" id="itItems" listUrl="{itMailQueue.ListItem.ListUrl}" searchSubfolders="true">
+                  <camlQuery>
+                    <Where>
+                      {phQuery}
+                    </Where>
+                  </camlQuery>
+
+                  <!--Resolve Template Columns, only once-->
+                  <constraint type="ValuesEqualConstraint" value1="{phTemplateColumnsResolved{phTemplateId}}" value2="false" ignoreCase="false">
+                    <true>
+                      <iterator type="StringSplitIterator" id="itString" text="{phParentColumns{phTemplateId}}" separator="|" removeEmptyEntries="true">
+                        <action type="SpFieldBuildPlaceholderAction" listUrl="{itMailQueue.ListItem.ParentListUrl}" itemId="{itMailQueue.ListItem.ParentItemId}" fieldName="{itString.Value}" placeholderName="myParentField" qmSharepointPlaceholders.FieldDefinition="true" qmSharepointPlaceholders.FieldDefinitionTypeBased="false" scope="global"/>
+                        <switch type="ValuesSwitch" value="{myParentField.definition.type}">
+                          <case value1="DateTime">
+                            <action type="SetPlaceholderAction" placeholderName="phParentDateTimeColumns{phTemplateId}" value="{phParentDateTimeColumns{phTemplateId}}|{itString.Value}" scope="global"/>
+                          </case>
+                          <case value1="User" value2="Lookup">
+                            <action type="SetPlaceholderAction" placeholderName="phParentUserColumns{phTemplateId}" value="{phParentUserColumns{phTemplateId}}|{itString.Value}" scope="global"/>
+                          </case>
+                        </switch>
+                      </iterator>
+
+
+                      <iterator type="StringSplitIterator" id="itString" text="{phItemColumns{phTemplateId}}" separator="|" removeEmptyEntries="true">
+                        <action type="SpFieldBuildPlaceholderAction" listUrl="{itMailQueue.ListItem.ListUrl}" itemId="{itMailQueue.ListItem.ItemId}" fieldName="{itString.Value}" placeholderName="myItemField" qmSharepointPlaceholders.FieldDefinition="true" qmSharepointPlaceholders.FieldDefinitionTypeBased="false" scope="global"/>
+                        <switch type="ValuesSwitch" value="{myItemField.definition.type}">
+                          <case value1="DateTime">
+                            <action type="SetPlaceholderAction" placeholderName="phItemDateTimeColumns{phTemplateId}" value="{phItemDateTimeColumns{phTemplateId}}|{itString.Value}" scope="global"/>
+                          </case>
+                          <case value1="User" value2="Lookup">
+                            <action type="SetPlaceholderAction" placeholderName="phItemUserColumns{phTemplateId}" value="{phItemUserColumns{phTemplateId}}|{itString.Value}" scope="global"/>
+                          </case>
+                        </switch>
+                      </iterator>
+
+                      <action type="SetPlaceholderAction" placeholderName="phTemplateColumnsResolved{phTemplateId}" value="true" scope="global" />
+                    </true>
+                  </constraint>
+
+
+                  <constraint type="SpItemExistsConstraint" listUrl="{itMailQueue.ListItem.ListUrl}" fieldName1="ID" value1="{itMailQueue.ListItem.ItemId}" searchSubfolders="true">
+                    <false>
+                      <continue id="itItems" />
+                    </false>
+                  </constraint>
+                  <constraint type="SpItemExistsConstraint" listUrl="{itMailQueue.ListItem.ParentListUrl}" fieldName1="ID" value1="{itMailQueue.ListItem.ParentItemId}" searchSubfolders="true">
+                    <false>
+                      <continue id="itItems" />
+                    </false>
+                  </constraint>
+
+                  <action type="SpItemBuildPlaceholderAction" listUrl="{itMailQueue.ListItem.ListUrl}" itemId="{itMailQueue.ListItem.ItemId}" placeholderName="phItem" scope="global" />
+                  <action type="SpItemBuildPlaceholderAction" listUrl="{itMailQueue.ListItem.ParentListUrl}" itemId="{itMailQueue.ListItem.ParentItemId}" placeholderName="phParentItem" scope="global" />
+
+                  <iterator type="StringSplitIterator" id="itString" text="{phParentDateTimeColumns{phTemplateId}}" separator="|" removeEmptyEntries="true">
+                    <constraint type="ValueNotEmptyConstraint" value="{phParentItem.{itString.Value}}">
+                      <true>
+                        <action type="BuildDateTimePlaceholderAction" placeholderName="phParentItem.{itString.Value}" dateTime="{phParentItem.{itString.Value}}" dateTimeFormat="{phCustom_DateFormat}" scope="global" />
+                      </true>
+                    </constraint>
+                  </iterator>
+
+                  <iterator type="StringSplitIterator" id="itString" text="{phItemDateTimeColumns{phTemplateId}}" separator="|" removeEmptyEntries="true">
+                    <constraint type="ValueNotEmptyConstraint" value="{phItem.{itString.Value}}">
+                      <true>
+                        <action type="BuildDateTimePlaceholderAction" placeholderName="phItem.{itString.Value}" dateTime="{phItem.{itString.Value}}" dateTimeFormat="{phCustom_DateFormat}" scope="global" />
+                      </true>
+                    </constraint>
+                  </iterator>
+
+                  <iterator type="StringSplitIterator" id="itString" text="{phItemUserColumns{phTemplateId}}" separator="|" removeEmptyEntries="true">
+                    <action type="SetStringSplitPlaceholderAction" placeholderName="phItem.{itString.Value}" value="{phItem.{itString.Value}}" splitSeparator=";#" separator="; " startIndex="1" step="2" scope="global"/>
+                  </iterator>
+
+                  <iterator type="StringSplitIterator" id="itString" text="{phParentUserColumns{phTemplateId}}" separator="|" removeEmptyEntries="true">
+                    <action type="SetStringSplitPlaceholderAction" placeholderName="phParentItem.{itString.Value}" value="{phParentItem.{itString.Value}}" splitSeparator=";#" separator="; " startIndex="1" step="2" scope="global"/>
+                  </iterator>
+
+                  <!--phRow setzen, damit Platzhalter aufgelöst werden-->
+                  <action type="SetPlaceholderAction" placeholderName="phRow" value="{phRowTemplate{phTemplateId}}" scope="global"/>
+                  <action type="SetPlaceholderAction" placeholderName="phMailBody{phTemplateId}" scope="global">
+                    <value>
+                      {phMailBody{phTemplateId}}
+                      {phRow}
+                    </value>
+                  </action>
+
+                  <action type="SetPlaceholderAction" placeholderName="phItemFound{phTemplateId}" value="true" scope="global" />
+                </iterator>
+                <action type="SpItemSetFieldsAction" listUrl="{phUrlMailQueue}" itemId="{itMailQueue.ListItem.Id}" fieldName1="Processed" value1="True" />
+
+              </true>
+              <false>
+                <action type="SpItemDeleteAction" listUrl="{phUrlMailQueue}" itemId="{itMailQueue.ListItem.ID}" recycle="false" />
+              </false>
+            </constraint>
+          </iterator>
+
+          <!--Wenn ein Item gefunden wurde, dann phMailBody des Templates mit Footer vervollständigen, ansonsten leeren-->
+          <constraint type="ValuesEqualConstraint" value1="{phItemFound{phTemplateId}}" value2="true" ignoreCase="false">
+            <true>
+              <action type="BuildPlaceholderAction" placeholderName="phMailBody{phTemplateId}" scope="global">
+                <build>
+                  <text value="{phMailBody{phTemplateId}}" />
+                  <text value="{phFooter{phTemplateId}}" />
+                </build>
+              </action>
+
+              <constraint type="ValuesEqualConstraint" value1="{phCustom_MailSendPerChapter}" value2="true" ignoreCase="false">
+                <true>
+                  <action type="SetPlaceholderAction" placeholderName="phItemPerUserFound" value="false" scope="global" />
+                  <action type="SetPlaceholderAction" placeholderName="phMailBody" value="{phMailBody{phTemplateId}}" scope="global" />
+                  <function id="fnCreateMailTrackingAndSend" />
+                </true>
+                <false>
+                  <action type="SetPlaceholderAction" placeholderName="phItemPerUserFound" value="true" scope="global" />
+                </false>
+              </constraint>
+            </true>
+            <false>
+              <action type="SetPlaceholderAction" placeholderName="phMailBody{phTemplateId}" value="" scope="global" />
+            </false>
+          </constraint>
+        </iterator>
+
+
+
+        <!--Wenn irgendetwas für den User gefunden wurde-->
+        <constraint type="ValuesEqualConstraint" value1="{phItemPerUserFound}" value2="true" ignoreCase="false">
+          <true>
+            <!--MailBody erzeugen-->
+            <iterator type="SpListQueryItemsIterator" id="itMailTemplates" listUrl="{phUrlMailTemplates}">
+              <camlQuery>
+                <Where>
+                  <Eq>
+                    <FieldRef Name="Active" />
+                    <Value Type="Text">True</Value>
+                  </Eq>
+                </Where>
+              </camlQuery>
+              <action type="SetPlaceholderAction" placeholderName="phTemplateId" value="{itMailTemplates.ListItem.Id}" scope="global" />
+              <action type="SetPlaceholderAction" placeholderName="phMailBody" value="{phMailBody}{phMailBody{phTemplateId}}" scope="global" />
+            </iterator>
+            <function id="fnCreateMailTrackingAndSend" />
+          </true>
+        </constraint>
+      </iterator>
+
+      <action type="StopStopwatchAction" id="MyStopwatch" />
+      <action type="WriteInfoAction" text="End {task.id}: {MyStopwatch.End}" />
+      <action type="WriteInfoAction" text="Time used: {MyStopwatch.TimeUsed.Hours}:{MyStopwatch.TimeUsed.Minutes}:{MyStopwatch.TimeUsed.Seconds}" />
+    </task>
+
+    <!--TASK: Send Mails within MailTracking -->
+    <task id="SendAllReadyToSendMailTracking" onError="abort">
+      <action type="StartStopWatchAction" id="MyStopwatch" />
+      <action type="WriteInfoAction" text="Start {task.id}: {MyStopwatch.Start}" />
+
+      <iterator type="SpListQueryItemsIterator" id="itMailTracking" listUrl="{phUrlMailTracking}" searchSubfolders="true">
+        <camlQuery>
+          <Where>
+            <Eq>
+              <FieldRef Name="Status" />
+              <Value Type="Text">ReadyToSend</Value>
+            </Eq>
+          </Where>
+        </camlQuery>
+
+        <function id="fnSendMail" itemId="{itMailTracking.ListItem.ID}" />
+      </iterator>
+
+      <action type="StopStopwatchAction" id="MyStopwatch" />
+      <action type="WriteInfoAction" text="End {task.id}: {MyStopwatch.End}" />
+      <action type="WriteInfoAction" text="Time used: {MyStopwatch.TimeUsed.Hours}:{MyStopwatch.TimeUsed.Minutes}:{MyStopwatch.TimeUsed.Seconds}" />
+    </task>
+  </tasks>
+
+  <!--FUNCTIONS-->
+  <functions>
+    <!--FUNCTION: fnCreateMailTrackingAndSend-->
+    <function id="fnCreateMailTrackingAndSend">
+      <constraint type="ValueNotEmptyConstraint" value="{phUserMail}">
+        <true>
+          <constraint type="ValueNotEmptyConstraint" value="{phMailBody}">
+            <true>
+              <!--Display Name ermitteln-->
+              <iterator type="SpListQueryItemsIterator" id="itMailQueue_GetUserName" listUrl="{phUrlMailQueue}" searchSubfolders="true" rowLimit="1">
+                <camlQuery>
+                  <Where>
+                    <Eq>
+                      <FieldRef Name="ToMail" />
+                      <Value Type="Text">{phUserMail}</Value>
+                    </Eq>
+                  </Where>
+                </camlQuery>
+
+                <action type="SetPlaceholderAction" placeholderName="phUserName" value="{itMailQueue_GetUserName.ListItem.ToName}" scope="task" />
+              </iterator>
+
+              <action type="SpFolderCreateAction" listUrl="{phUrlMailTracking}" folderPath="{phYear}/{phMonth}/{phDay}" contentTypeId="0x0120" />
+              <action type="SpItemCreateAction" listUrl="{phUrlMailTracking}/{phYear}/{phMonth}/{phDay}" fieldName1="Title" value1="{phCustom_MailSubject}" fieldName2="Body" value2="{phMailBody}" fieldName3="ToMail" value3="{phUserMail}" fieldName4="ToName" value4="{phUserName}" fieldName5="Status" value5="ReadyToSend">
+
+                <action type="SetPlaceholderAction" placeholderName="phMailItemId" value="{SpItemCreateAction.Result.ListItem.Id}" scope="global" />
+
+              </action>
+
+              <!--Delete all Processed entries in MailQueue-->
+              <iterator type="SpListQueryItemsIterator" id="itMailQueue_Processed" listUrl="{phUrlMailQueue}" searchSubfolders="true">
+                <camlQuery>
+                  <Where>
+                    <Eq>
+                      <FieldRef Name="Processed" />
+                      <Value Type="Text">True</Value>
+                    </Eq>
+                  </Where>
+                </camlQuery>
+                <viewFields>
+                  <FieldRef Name="ID" />
+                </viewFields>
+                <action type="SpItemDeleteAction" listUrl="{phUrlMailQueue}" itemId="{itMailQueue_Processed.ListItem.ID}" recycle="false" />
+              </iterator>
+
+              <!--Send Mail-->
+              <function id="fnSendMail" itemId="{phMailItemId}" />
+
+            </true>
+          </constraint>
+        </true>
+      </constraint>
+    </function>
+
+    <!--FUNCTION: fnSendMail-->
+    <function id="fnSendMail" itemId="">
+      <constraint type="ValuesEqualConstraint" value1="{phCustom_MailSend}" value2="true" ignoreCase="false">
+        <true>
+
+          <action type="SpItemBuildPlaceholderAction" listUrl="{phUrlMailTracking}" itemId="{Function.itemId}" placeholderName="phItemMail" scope="global" />
+          <!--Erneutes setzen der Variable damit die Platzhalter aufgelöst werden-->
+          <action type="BuildPlaceholderAction" placeholderName="phMailBody" scope="global">
+            <build>
+              <text value="{phItemMail.Body}" />
+              <replace oldValue="href=&quot;/" newValue="href=&quot;{phWebAppUrl}/" />
+            </build>
+          </action>
+
+          <run type="TryCatch">
+            <try>
+              <!--<action type="SpSendEmailAction" webUrl="{phSiteUrl}" to="{phItemMail.ToMail}" cc="" bcc="" from="{phCustom_MailFrom}" subject="{phItemMail.Title}" body="{phMailBody}" />-->
+              <!-- <action type="SpSendSmtpEmailAction" webUrl="{phSiteUrl}" to="{phItemMail.ToMail}" cc="" bcc="" from="{phCustom_MailFrom}" subject="{phItemMail.Title}" body="{phMailBody}" /> -->
+               <action type="SetPlaceholderAction" placeholderName="header" scope="task">
+                <value>
+                <table class="MsoNormalTable" style="margin-bottom: 25px;width: 100%; border-collapse: collapse; mso-yfti-tbllook: 1184; mso-padding-alt: 0cm 0cm 0cm 0cm;" border="0" width="100%" cellspacing="0" cellpadding="0">
+    <tbody>
+    <tr style="mso-yfti-irow: 0; mso-yfti-firstrow: yes; mso-yfti-lastrow: yes;">
+    <td style="width: 72.7902%; padding: 0px;" width="47%">
+    <p class="xmsonormal"><span style="font-family: Calibri; font-size: 16pt; color: #201f1e; border: none windowtext 1pt; mso-border-alt: none windowtext 0cm; padding: 0cm;">Shareflex Quality Documents</span></p>
+    </td>
+    </tr>
+    </tbody>
+    </table><br/>
+                </value>
+              </action>
+              <action type="SetPlaceholderAction" placeholderName="phMailBody" value="{header}{phMailBody}" scope="task" />
+              <action type="SpItemCreateAction" listUrl="{phSiteUrl}/Administration/Lists/OutgoingEMails" eventsActivated="true">
+                <fields>
+                  <field fieldName="Title" value="{phItemMail.Title}"/>
+                  <field fieldName="nfEmailFrom" value="{phCustom_MailFrom}"/>
+                  <field fieldName="nfEmailTo" value="{phItemMail.ToMail}"/>
+                  <field fieldName="nfEmailBody" value="{phMailBody}"/>
+                  <field fieldName="MailStatus" value="Sending"/>
+                </fields>
+                <action type="WriteInfoAction" text="*** Outgoing mail | Item ID {SpItemCreateAction.Result.ListItem.Id} just created ***" />
+                <action type="WriteErrorAction" text="*** Outgoing mail | Item ID {SpItemCreateAction.Result.ListItem.Id} just created ***" />
+              </action>
+
+              <action type="SpItemSetFieldsAction" listUrl="{phUrlMailTracking}" itemId="{phItemMail.ID}" fieldName1="Status" value1="Sent" />
+            </try>
+            <catch>
+              <action type="SpItemSetFieldsAction" listUrl="{phUrlMailTracking}" itemId="{phItemMail.ID}" fieldName1="Status" value1="Send Error" />
+            </catch>
+          </run>
+
+        </true>
+      </constraint>
+    </function>
+  </functions>
+</tasksConfiguration>
+<!--SCRIPT: qmWebApp_TimerJob_SITES_DMS_Mails-->

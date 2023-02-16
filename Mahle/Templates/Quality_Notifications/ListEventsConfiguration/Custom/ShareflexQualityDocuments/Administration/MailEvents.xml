@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!--SCRIPT: MailEvents-->
+<tasksConfiguration>
+  <!--INCLUDES-->
+  <includes>
+    <include name="qmSite_Defaults_CUSTOM" />
+    <!-- <include name="qmSite_Defaults_Locale" /> -->
+    <include name="qmSite_Administration_MailEvents" />
+
+    <!-- <include name="qmSite_Defaults_CUSTOM" /> -->
+    <!-- <include name="qmSite_Administration_MailEvents_CUSTOM" /> -->
+
+    <!-- <include name="qmSite_Defaults_Conclude" /> -->
+  </includes>
+
+</tasksConfiguration>
+<!--SCRIPT: MailEvents-->

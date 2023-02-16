@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: "Notifications_Custom.beeml" (modified by sebastian.duschinger on 28.09.2021 13:21:37) -->
+<BeeScript>
+	<Log message="Deploying/Updating Views" />
+	<SetVariable name="DeploymentPath" value="{__SP_ROOTWEB__}/pscBAF/Deployment/ShareflexQualityDocuments_Custom" />
+	<SetVariable name="TemplateMode" value="CreateOnly"/>
+	<SetVariable name="MailRulesMode" value="CreateOnly"/>
+	<SetVariable name="GroupCustom" value="Shareflex Quality Documents" />
+  	<Set SitePath="{replace('{__SP_CURRENT_SITE__}','{__SP_CURRENT_WEBAPPLICATION__}','')}" />
+	<If condition="{SitePath} ISEMPTY"><Set SitePath="ROOT" /></If>
+	<ElseIf condition="{SitePath} STARTSWITH /"><Set SitePath="{substring('{SitePath}',1)}" /></ElseIf>
+	<Set SitePath="{replace('{SitePath}','/','_')}" />
+
+	<CallFunction name="CreateLists_Mails" />
+	<CallFunction name="CreateContent_MailTemplates" />
+	<CallFunction name="CreateContent_MailRules" />
+	<CallFunction name="Setup_TimerJobs" />
+	<CallFunction name="Update_Navigation" />
+	
+	<FUNCTION name="CreateLists_Mails">
+		<SetWebContext url="{__SP_ROOTWEB__}/Administration">
+			<!-- <SetListContext name="OutgoingEMails">
+				<UpdateBre2Event name="Core/ShareflexAddons/SFnotifications/Administration/OutgoingEMails" enabled="false" />
+				<EnsureBre2Event name="Custom/ShareflexQualityDocuments/Administration/OutgoingEmails"
+								eventTypes="ItemAdded,ItemUpdated"
+								enabled="true"
+								mode="CreateOrUpdate"
+								scriptSource="{DeploymentPath}/ListEventsConfiguration/Custom/ShareflexQualityDocuments/Administration/OutgoingEmails.js"
+				/>
+			</SetListContext> -->
+
+			<EnsureList name="MailQueue" type="GenericList" title="Mail Queue" description="" contentTypesEnabled="false" quickLaunchEnabled="false" p_EnableFolderCreation="false" p_DisableGridEditing="false" p_EnableAttachments="false" p_NoCrawl="true">
+				<EnsureField name="Title" type="Text" title="SourceList" required="true" />
+				<EnsureField name="MailGroup" type="Text" title="MailGroup" required="true" />
+				<EnsureField name="MailChapter" type="Text" title="Mail Chapter" required="true" defaultValue="" />
+				<EnsureField name="MailEventId" type="Text" title="Mail Event ID" required="false" defaultValue="" />
+				<EnsureField name="ToMail" type="Text" title="ToMail" />
+				<EnsureField name="ToName" type="Text" title="ToName" />
+				<EnsureField name="ListUrl" type="Text" />
+				<EnsureField name="ItemId" type="Text" title="ItemId" />
+				<EnsureField name="ParentItemId" type="Text" />
+				<EnsureField name="ParentListUrl" type="Text" />
+				<EnsureField name="Processed" type="Boolean" title="Processed" defaultValue="0" />
+				<EnsureField name="qmRecordNo" />
+				<EnsureField name="Condition" type="Note" />
+				<EnsureView name="AllItems" type="HTML"
+				            viewFields="ID, LinkTitle, MailEventId, MailChapter, ListUrl, ItemId, ToMail, ToName, ParentListUrl, ParentItemId, Condition, qmRecordNo, Processed, Modified"
+				            sortFields="ID desc"
+				            showFolders="false" p_DefaultView="true" p_MobileView="true" p_MobileDefaultView="false" p_TabularView="true">
+				</EnsureView>
+			</EnsureList>
+
+			<EnsureList name="MailImmediate" type="GenericList" title="Mail Immediate" description="" contentTypesEnabled="false" quickLaunchEnabled="false" p_EnableFolderCreation="false" p_DisableGridEditing="false" p_EnableAttachments="false" p_NoCrawl="true">
+				<EnsureField name="Title" type="Text" title="SourceList" required="true" defaultValue="" />
+				<EnsureField name="MailChapter" type="Text" title="Mail Chapter" required="true" defaultValue="" />
+				<EnsureField name="MailEventId" type="Text" title="Mail Event ID" required="false" defaultValue="" />
+				<EnsureField name="ListUrl" type="Text" />
+				<EnsureField name="ItemId" type="Text" />
+				<EnsureField name="ParentItemId" type="Text" />
+				<EnsureField name="ParentListUrl" type="Text" />
+				<EnsureField name="ToMail" type="Text" title="ToMail" />
+				<EnsureField name="ToName" type="Text" title="ToName" />
+				<EnsureField name="pscBreLog" type="Note" />
+				<EnsureField name="Status" type="Text" />
+				<EnsureField name="TimeUsed" />
+				<EnsureView name="AllItems" type="HTML"
+				            viewFields="ID, Edit, LinkTitle, MailChapter, ListUrl, ItemId, ToMail, ToName, Status, TimeUsed, pscBreLog, Modified"
+				            sortFields="ID"
+				            showFolders="false" p_DefaultView="true" p_RowLimit="30" p_MobileView="true" p_MobileDefaultView="false" p_TabularView="true">
+				</EnsureView>
+			</EnsureList>
+
+			<EnsureList name="MailTracking" type="GenericList" title="Mail Tracking" description="" contentTypesEnabled="false" quickLaunchEnabled="false" p_EnableFolderCreation="false" p_DisableGridEditing="false" p_EnableAttachments="false" p_NoCrawl="true">
+				<EnsureField name="Title" type="Text" title="Subject" />
+				<EnsureField name="ToMail" type="Text" title="ToMail" />
+				<EnsureField name="ToName" type="Text" title="ToName" />
+				<EnsureField name="Body" type="Note" title="Body" />
+				<EnsureField name="Status" type="Text" title="Status" />
+				<EnsureField name="MailTemplate" type="Text" title="MailTemplate" />
+				<EnsureField name="pscBreLog" type="Note" />
+				<EnsureView name="AllItems" type="HTML"
+				            viewFields="DocIcon, LinkTitle, ToMail, ToName, Body, Status, Modified"
+				            showFolders="true" p_DefaultView="true" p_MobileView="true" p_MobileDefaultView="false" p_TabularView="true">
+					<![CDATA[<OrderBy><FieldRef Name="Title" /></OrderBy>]]>
+				</EnsureView>
+				<EnsureView name="Filter" type="HTML"
+				            viewFields="DocIcon, LinkTitle, ToMail, ToName, Body, Status, Modified"
+				            showFolders="false" p_DefaultView="false" p_MobileView="true" p_MobileDefaultView="false" p_TabularView="true">
+					<![CDATA[<OrderBy><FieldRef Name="Title" /></OrderBy>]]>
+				</EnsureView>
+			</EnsureList>
+
+			<EnsureList name="MailTemplates" type="GenericList" title_EN="Mail Templates" title_DE="Mail Vorlagen" description="" contentTypesEnabled="false" quickLaunchEnabled="false" p_EnableFolderCreation="false" p_DisableGridEditing="false" p_EnableAttachments="false" p_NoCrawl="true">
+				<EnsureField name="Title" type="Text" title="Mail Chapter" required="true" defaultValue="" />
+				<AssignFieldToList name="Subject" />
+				<EnsureField name="Body" type="Note" title="Body" />
+				<EnsureField name="Active" type="Boolean" title="Active" defaultValue="1" />
+				<EnsureView name="AllItems" type="HTML"
+				            viewFields="Edit, LinkTitle, Body, Active, Modified, Editor"
+				            sortFields="Title"
+				            showFolders="false" p_DefaultView="true" p_RowLimit="30" p_MobileView="true" p_MobileDefaultView="false" p_TabularView="true">
+				</EnsureView>
+			</EnsureList>
+
+			<EnsureList name="MailRules" type="GenericList" title_EN="Mail Rules" title_DE="Mail Regeln" description="" contentTypesEnabled="false" quickLaunchEnabled="false" p_EnableFolderCreation="false" p_DisableGridEditing="false" p_EnableAttachments="false" p_NoCrawl="true">
+				<EnsureField name="Title" type="Text" title="Mail Rule Title" required="false" />
+				<EnsureField name="Trigger" type="Choice" title="Trigger" required="true" choices="New Task, Timer Job Task Reminder 1, Timer Job Task Reminder 2, Timer Job Task Reminder 3, Timer Job Task Escalation 1, Timer Job Task Escalation 2, New Change Request, Document Published, Document Retracted, Document Checkout Notification, Document Checkout Editor, Document Number Assigned" defaultValue="" />
+				<EnsureField name="MailChapter" type="Lookup" title="Mail Chapter" lookupList="MailTemplates" lookupField="Title" />
+				<EnsureField name="SendMode" type="Choice" title="Send Mode" choices="Immediate, Cumulate" required="false" />
+				<EnsureField name="Condition" type="Note" title="Condition" />
+				<EnsureField name="RecipientUsers" type="UserMulti" title="Recipient Users" required="false" />
+				<EnsureField name="ItemRecipientColumns" type="Text" title="Item Recipient Columns" required="false" />
+				<EnsureField name="ParentItemRecipientColumns" type="Text" title="Parent Item Recipient Columns" required="false" />
+				<EnsureField name="LookupList" type="Text" title="Lookup List" required="false" />
+				<EnsureField name="LookupQuery" type="Note" title="LookupQuery" />
+				<EnsureField name="LookupRecipientColumns" type="Text" title="Lookup Recipient Columns" required="false" />
+				<EnsureField name="MailQueueCondition" type="Note" title="MailQueueCondition" required="false" />
+				<AssignFieldToList name="Comment" />
+				<AssignFieldToList name="qmActive" />
+				<DeleteField name="MailGroup" force="true" />
+				<EnsureView name="AllItems" type="HTML"
+				            viewFields="Edit, ID, Trigger, RecipientUsers, ItemRecipientColumns, ParentItemRecipientColumns, MailQueueCondition, qmActive, Modified, Editor"
+				            showFolders="false" p_DefaultView="true" p_RowLimit="30" p_MobileView="true" p_MobileDefaultView="false" p_TabularView="true">
+					<![CDATA[<OrderBy><FieldRef Name="Title" /></OrderBy>]]>
+				</EnsureView>
+			</EnsureList>
+
+			<EnsureList name="MailEvents" type="GenericList" title_EN="Mail Events" title_DE="Mail Ereignisse" description="" p_EnableVersioning="true"
+			            contentTypesEnabled="false" quickLaunchEnabled="false" p_EnableFolderCreation="false" p_DisableGridEditing="false" p_EnableAttachments="false" p_NoCrawl="true">
+				<EnsureField name="Title" title="Trigger" type="Text" />
+				<EnsureField name="ListUrl" type="Text" />
+				<EnsureField name="ItemId" type="Text" />
+				<EnsureField name="ParentItemId" type="Text" />
+				<EnsureField name="ParentListUrl" type="Text" />
+				<EnsureField name="Status" type="Text" />
+				<EnsureField name="pscBreLog" />
+				<EnsureField name="RulesApplied" type="Note" />
+				<EnsureField name="TimeUsed" />
+				<EnsureView name="AllItems" type="HTML"
+				            viewFields="Edit, ID, LinkTitle, ListUrl, ItemId, ParentListUrl, ParentItemId, Status, RulesApplied, TimeUsed, pscBreLog, Modified, Editor"
+				            showFolders="false" p_DefaultView="true" p_RowLimit="30" p_MobileView="true" p_MobileDefaultView="false" p_TabularView="true">
+					<![CDATA[<OrderBy><FieldRef Name="ID" Ascending="FALSE"/></OrderBy>]]>
+				</EnsureView>
+				<EnsureBre2Event name="Custom/ShareflexQualityDocuments/Administration/MailEvents"
+				                 eventTypes="ItemAdded,ItemUpdated"
+				                 enabled="true"
+				                 mode="CreateOrUpdate"
+				                 scriptSource="{DeploymentPath}/ListEventsConfiguration/Custom/ShareflexQualityDocuments/Administration/MailEvents.xml"
+				 />
+			</EnsureList>
+
+			<EnsureList name="MailEventsPrevent" type="GenericList" title="MailEventsPrevent" description="" p_EnableVersioning="false" p_Hidden="true" contentTypesEnabled="false" quickLaunchEnabled="false" p_EnableFolderCreation="false" p_DisableGridEditing="false" p_EnableAttachments="false" p_NoCrawl="true">
+				<EnsureField name="Title" title="Trigger" type="Text" />
+				<EnsureField name="MailEvent" title="Mail Event" type="Text" />
+				<AssignFieldToList name="qmRecordNo" />
+				<EnsureView name="AllItems" type="HTML"
+				            viewFields="Edit, ID, LinkTitle, MailEvent, qmRecordNo, Modified, Editor"
+				            sortFields="ID Desc"
+				            showFolders="false" p_DefaultView="true" p_RowLimit="30" p_MobileView="true" p_MobileDefaultView="false" p_TabularView="true">
+				</EnsureView>
+			</EnsureList>
+		</SetWebContext>
+	</FUNCTION>
+
+	<FUNCTION name="CreateContent_MailTemplates">
+		<SetWebContext url="{__SP_ROOTWEB__}/Administration">
+			<SetListContext name="MailTemplates">
+				<FUNCTION name="SetMailTemplateVariable" variableName="" sourceFile="">
+					<SetVariable name="{variableName}" sourceFile="{sourceFile}" />
+					<SetVariable name="{variableName}" value="{replace({variableName},'[phRootWeb]','{__SP_ROOTWEB__}')}" />
+				</FUNCTION>
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_DocumentCheckoutEditor" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/Document Checkout Editor.html" />
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_DocumentCheckoutNotification" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/Document Checkout Notification.html" />
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_DocumentNumberAssigned" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/Document Number Assigned.html" />
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_DocumentNumberCreationRejected" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/Document Number Creation Rejected.html" />
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_DocumentPublished" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/Document Published.html" />
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_DocumentRetracted" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/Document Retracted.html" />
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_DocumentRetractionDeclined" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/Document Retraction Declined.html" />
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_DocumentWorkflowCancelled" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/Document Workflow Cancelled.html" />
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_NewChangeRequest" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/New Change Request.html" />
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_NewTask" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/New Task.html" />
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_TaskReminder1" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/Task Reminder 1.html" />
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_TaskReminder2" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/Task Reminder 2.html" />
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_TaskReminder3" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/Task Reminder 3.html" />
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_TaskEscalation1" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/Task Escalation 1.html" />
+				<CallFunction name="SetMailTemplateVariable" variableName="MailTemplates_TaskEscalation2" sourceFile="{DeploymentPath}/Content/Administration/MailTemplates/Task Escalation 2.html" />
+				
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="Document Checkout Editor" v_Active="true" v_Body="{MailTemplates_DocumentCheckoutEditor}" />
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="Document Checkout Notification" v_Active="true" v_Body="{MailTemplates_DocumentCheckoutNotification}" />
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="Document Number Assigned" v_Active="true" v_Body="{MailTemplates_DocumentNumberAssigned}" />
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="Document Number Creation Rejected" v_Active="true" v_Body="{MailTemplates_DocumentNumberCreationRejected}" />
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="Document Published" v_Active="true" v_Body="{MailTemplates_DocumentPublished}" />
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="Document Retracted" v_Active="true" v_Body="{MailTemplates_DocumentRetracted}" />
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="Document Retraction Declined" v_Active="true" v_Body="{MailTemplates_DocumentRetractionDeclined}" />
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="Document Workflow Cancelled" v_Active="true" v_Body="{MailTemplates_DocumentWorkflowCancelled}" />
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="New Change Request" v_Active="true" v_Body="{MailTemplates_NewChangeRequest}" />
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="New Task" v_Active="true" v_Body="{MailTemplates_NewTask}" />
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="Task Reminder 1" v_Active="true" v_Body="{MailTemplates_TaskReminder1}" />
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="Task Reminder 2" v_Active="true" v_Body="{MailTemplates_TaskReminder2}" />
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="Task Reminder 3" v_Active="true" v_Body="{MailTemplates_TaskReminder3}" />
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="Task Escalation 1" v_Active="true" v_Body="{MailTemplates_TaskEscalation1}" />
+				<EnsureItem mode="{TemplateMode}" keyFields="Title" type="ITEM" v_Title="Task Escalation 2" v_Active="true" v_Body="{MailTemplates_TaskEscalation2}" />
+			</SetListContext>
+		</SetWebContext>
+	</FUNCTION>
+
+	<FUNCTION name="CreateContent_MailRules">
+		<SetWebContext url="{__SP_ROOTWEB__}/Administration">
+			<SetListContext name="MailRules">
+				<SetVariable name="mailQueueCondition">
+					<![CDATA[
+              		<Neq><FieldRef Name="weTaskStatus"></FieldRef><Value Type="Text">Completed</Value></Neq>
+         			 ]]>
+				</SetVariable>
+				<EnsureItem mode="{MailRulesMode}" keyFields="Title" type="ITEM" v_Title="Document Checkout Editor" v_Trigger="Document Checkout Editor" v_ItemRecipientColumns="qmEditor" v_MailChapter="Document Checkout Editor" p_SendMode="Cumulate" />
+				<EnsureItem mode="{MailRulesMode}" keyFields="Title" type="ITEM" v_Title="Document Checkout Notification" v_Trigger="Document Checkout Notification" v_ItemRecipientColumns="qmEditor" v_MailChapter="Document Checkout Notification" p_SendMode="Cumulate" />
+				<EnsureItem mode="{MailRulesMode}" keyFields="Title" type="ITEM" v_Title="Document Number Assigned" v_Trigger="Document Number Assigned" v_ItemRecipientColumns="qmEditor" v_MailChapter="Document Number Assigned" p_SendMode="Cumulate" />
+				<EnsureItem mode="{MailRulesMode}" keyFields="Title" type="ITEM" v_Title="Document Number Creation Rejected" v_Trigger="Document Number Creation Rejected" v_ItemRecipientColumns="qmEditor" v_MailChapter="Document Number Creation Rejected" p_SendMode="Cumulate" />
+				<EnsureItem mode="{MailRulesMode}" keyFields="Title" type="ITEM" v_Title="Document Published" v_Trigger="Document Published" v_ItemRecipientColumns="qmEditor,qmNotificationList" v_MailChapter="Document Published" p_SendMode="Cumulate" />
+				<EnsureItem mode="{MailRulesMode}" keyFields="Title" type="ITEM" v_Title="Document Retracted" v_Trigger="Document Retracted" v_ItemRecipientColumns="qmEditor" v_MailChapter="Document Retracted" p_SendMode="Cumulate" />
+				<EnsureItem mode="{MailRulesMode}" keyFields="Title" type="ITEM" v_Title="Document Retraction Declined" v_Trigger="Document Retraction Declined" v_ParentItemRecipientColumns="Author" v_MailChapter="Document Retraction Declined" p_SendMode="Cumulate" />
+				<EnsureItem mode="{MailRulesMode}" keyFields="Title" type="ITEM" v_Title="Document Workflow Cancelled" v_Trigger="Document Workflow Cancelled" v_ItemRecipientColumns="qmReviewer,qmApprover,qmConfirmer" v_MailChapter="Document Workflow Cancelled" p_SendMode="Cumulate" />
+				<EnsureItem mode="{MailRulesMode}" keyFields="Title" type="ITEM" v_Title="New Change Request" v_Trigger="New Change Request" v_ParentItemRecipientColumns="qmEditor" v_MailChapter="New Change Request" p_SendMode="Cumulate" />
+				<EnsureItem mode="{MailRulesMode}" keyFields="Title" type="ITEM" v_Title="New Task" v_Trigger="New Task" v_ItemRecipientColumns="AssignedTo" v_MailChapter="New Task" v_MailQueueCondition="{mailQueueCondition}" p_SendMode="Cumulate" />
+				<EnsureItem mode="{MailRulesMode}" keyFields="Title" type="ITEM" v_Title="TimerJob Task Reminder 1" v_Trigger="TimerJob Task Reminder 1" v_ItemRecipientColumns="AssignedTo" v_MailChapter="Task Reminder 1" v_MailQueueCondition="{mailQueueCondition}" p_SendMode="Cumulate" />
+				<EnsureItem mode="{MailRulesMode}" keyFields="Title" type="ITEM" v_Title="TimerJob Task Escalation 1" v_Trigger="TimerJob Task Escalation 1" v_MailChapter="Task Escalation 1" v_ItemRecipientColumns="AssignedTo" v_ParentItemRecipientColumns="qmEditor" v_MailQueueCondition="{mailQueueCondition}" p_SendMode="Cumulate" />
+			</SetListContext>
+		</SetWebContext>
+	</FUNCTION>
+
+	<FUNCTION name="Setup_TimerJobs">
+	<RegisterResxFile name="ShareflexFlow.resx" sourceFile="{__SP_ROOTWEB__}/pscBAF/Deployment/ShareflexAddons/Core/ShareflexAddons/Resources/SFflow/PortalSystems.ShareflexFlow.en-US.resx.xml" />
+	<RegisterResxFile name="ShareflexFlow.de.resx" sourceFile="{__SP_ROOTWEB__}/pscBAF/Deployment/ShareflexAddons/Core/ShareflexAddons/Resources/SFflow/PortalSystems.ShareflexFlow.de-DE.resx.xml" />
+		<SetWebContext url="{__SP_ROOTWEB__}">
+			<EnsureField name="qmMailCounter" type="Number" title="Mail Counter" group="{GroupCustom}" p_DisplayFormat="NoDecimal" defaultValue="0" pushChangesToLists="true" />
+		</SetWebContext>
+		<SetContentTypeContext name="{$ContentTypeName_ShareflexFlowTask}">
+			<AssignField name="qmMailCounter" />
+		</SetContentTypeContext>
+		<CallFunction name="DeploySitePoolDefault" mode="CreateOrUpdate"
+			sourcePath="Custom/ShareflexQualityDocuments/qmWebApp_TimerJob_[Site]_Mails.xml"
+			targetPath="Custom/ShareflexQualityDocuments/qmWebApp_TimerJob_{SitePath}_Mails.xml" />
+		<CallFunction name="fcnEnsureBre2_TimerJob" scriptName="Mails" nextExecution="2016-03-30 09:00" intervalDays="1" enabled="true"/>
+		<CallFunction name="fcnEnsureBre2_TimerJob" scriptName="MailEventsReminder" nextExecution="2016-03-30 06:00" intervalDays="1" enabled="true"/>
+	</FUNCTION>
+
+	<FUNCTION name="Update_Navigation">
+		<RegisterResxFile name="ShareflexAddons.resx" sourceFile="{__SP_ROOTWEB__}/pscBAF/Deployment/ShareflexAddons/Core/ShareflexAddons/Resources/PortalSystems.ShareflexAddons.en-US.resx.xml" />
+		<RegisterResxFile name="ShareflexAddons.de.resx" sourceFile="{__SP_ROOTWEB__}/pscBAF/Deployment/ShareflexAddons/Core/ShareflexAddons/Resources/PortalSystems.ShareflexAddons.de-DE.resx.xml" />
+		<SetWebContext url="{__SP_ROOTWEB__}/Administration">
+			<Set urlMailRules="{__SP_ROOTWEB__}/Administration/SitePages/Shareflex/View.aspx?$List=Lists/MailRules" />
+			<Set urlMailTemplates="{__SP_ROOTWEB__}/Administration/SitePages/Shareflex/View.aspx?$List=Lists/MailTemplates" />
+			<Set urlMailTracking="{__SP_ROOTWEB__}/Administration/SitePages/Shareflex/View.aspx?$List=Lists/MailTracking" />
+			<Set urlOutgoingMails="{__SP_ROOTWEB__}/Administration/SitePages/Shareflex/View.aspx?$List=Lists/OutgoingEmails" />
+			<DeleteNavigationNode menu="QuickLaunch" title="{$Navigation_Notifications}" />
+			<EnsureNavigationNode menu="QuickLaunch" title="{$Navigation_Notifications}" url="{__SP_ROOTWEB__}/Administration" />
+			<EnsureNavigationNode menu="QuickLaunch" folder1="{$Navigation_Notifications}" title_DE="Mail Vorlagen" title_EN="Mail Templates" url="{urlMailTemplates}" />
+			<EnsureNavigationNode menu="QuickLaunch" folder1="{$Navigation_Notifications}" title_DE="Mail Regeln" title_EN="Mail Rules" url="{urlMailRules}" />
+			<EnsureNavigationNode menu="QuickLaunch" folder1="{$Navigation_Notifications}" title_DE="Mail Tracking" title_EN="Mail Tracking" url="{urlMailTracking}" />
+			<EnsureNavigationNode menu="QuickLaunch" folder1="{$Navigation_Notifications}" title_DE="Ausgehende Mails" title_EN="Outgoing Emails" url="{urlOutgoingMails}" />
+			<SetVariable name="properties" evaluate="true">
+				<![CDATA[
+				\{
+					"Layout":
+					\{
+						"LayoutType"       : "Button",
+						"IconPosition"     : "IconOnLeft",
+						"ButtonAppearance" : "Outline",
+						"Alignment"        : "Center",
+						"LinesOfText"      : "OneLine",
+						"ShowDescription"  : true
+					},
+					"Items":
+					[
+						"[MERGE-CMD: APPEND]",
+						\{
+							"Title"         : "Mail Templates",
+							"SourceUrl"     : '{urlMailTemplates}',
+							"ThumbnailType" : "Icon",
+							"Icon"          : "filetemplate"
+						},
+						\{
+							"Title"         : "Mail Rules",
+							"SourceUrl"     : '{urlMailRules}',
+							"ThumbnailType" : "Icon",
+							"Icon"          : "specialevent"
+						},
+						\{
+							"Title"         : "Mail Tracking",
+							"SourceUrl"     : '{urlMailTracking}',
+							"ThumbnailType" : "Icon",
+							"Icon"          : "recurringtask"
+						},
+						\{
+							"Title"         : "{$Navigation_Notifications_OutgoingEMails}",
+							"SourceUrl"     : '{urlOutgoingMails}',
+							"ThumbnailType" : "Icon",
+							"Icon"          : "mail"
+						},
+					]
+				}]]>
+			</SetVariable>
+			<SetPageContext name="SitePages/Home.aspx">
+				<DeleteClientSideWebPart title="{$Navigation_Notifications}" />
+				<EnsureClientSideWebPart title="{$Navigation_Notifications}" type="QuickLinks" identificationMethod="ByTitle" section="1" column="1" order="2" jsonProperties="{properties}" />
+			</SetPageContext>
+		</SetWebContext>
+	</FUNCTION>
+
+    <Function name="fcnEnsureBre2_TimerJob" scriptName="" nextExecution="" intervalMinutes="0" intervalHours="0" intervalDays="0" enabled="true">
+		<SetVariable name="Script_Content" sourceFile="{DeploymentPath}/TimerJobsConfiguration/Custom/ShareflexQualityDocuments/[Site]_{scriptName}.xml" />
+		<Set Script_Content="{replace(Script_Content,'[phSiteUrl]','{__SP_ROOTWEB__}')}" />
+		<Set Script_Content="{replace(Script_Content,'[phWebAppUrl]','{__SP_CURRENT_WEBAPPLICATION__}')}" />
+		<Set Script_Content="{replace(Script_Content,'[Site]','{SitePath}')}" />
+		<Set Script_Content="{replace(Script_Content,'[LCID]','{__LCID__}')}" />
+		<EnsureBre2TimerJob mode="CreateOnly" enabled="{enabled}" nextExecution="{nextExecution}" intervalMinutes="{intervalMinutes}" intervalHours="{intervalHours}" intervalDays="{intervalDays}"
+		                    script="{Script_Content}"
+		                    name="Custom/ShareflexQualityDocuments/{SitePath}_{scriptName}" />
+	</Function>
+
+    <Function name="DeploySitePoolDefault" sourcePath="" targetPath="" mode="CreateOnly">
+		<SetVariable name="TimerJobScript" sourceFile="{DeploymentPath}/SitePoolDefaults/{sourcePath}" />
+		<Set TimerJobScript="{replace(TimerJobScript,'__SiteUrl__','{__SP_CURRENT_SITE__}')}" />
+		<Set TimerJobScript="{replace(TimerJobScript,'__MasterBAFUrl__','{__SP_MASTERBAF__}')}" />
+		<Set TimerJobScript="{replace(TimerJobScript,'__Site__','{SitePath}')}" />
+		<EnsureBre2Default scope="WebApplication" mode="{mode}"
+		                   script="{TimerJobScript}"
+		                   name="{targetPath}" />
+	</Function>
+</BeeScript>
+<!-- File: "Notifications_Custom.beeml" (modified by sebastian.duschinger on 28.09.2021 13:21:37) -->

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<tasksConfiguration>
+  <placeholdersGenerators>
+    <placeholdersGenerator type="StandardPlaceholdersGenerator" id="qmStandardPlaceholders" dateTimeInformation="true" />
+    <placeholdersGenerator type="CsomPlaceholdersGenerator" id="qmSharepointPlaceholders" UserFieldInformation="true" ListItemInformation="true" ListItemUrls="true" ListItemFields="true" UserObject="true" WebInformation="false" FileInformation="true" />
+  </placeholdersGenerators>
+  <loggers><logger type="CsomListLogger" id="CsomListLog" logListUrl="{MasterBaf.LogsListUrl}" logLevel="Warning" /></loggers>
+  <synchronizers><synchronizer type="InProcessSynchronizer" id="InProcessSynchronizer" timeOut="300000" fallBackSynchronizer="" /></synchronizers>
+  <placeholders>
+    <placeholder key="phSiteUrl" value="[phSiteUrl]" />
+    <placeholder key="phWebAppUrl" value="[phWebAppUrl]" />
+    <placeholder key="phUrlWorkflowTasks" value="{phSiteUrl}/Lists/ShareflexFlowWorkflowTasks" />
+    <placeholder key="phUrlMailEvents" value="{phSiteUrl}/Administration/Lists/MailEvents" />
+  </placeholders>
+  <functions>
+    <function id="SetMailCounter0">
+      <!-- Alle User bzw. gruppen aus der Liste MailQueue ermitteln -->
+      <action type="SetPlaceholderAction" placeholderName="phUsersList" value="|" scope="global"/>
+      <iterator type="SpListQueryItemsIterator" id="itTasks" listUrl="{phUrlWorkflowTasks}" searchSubfolders="true" skipFolders="true">
+        <camlQuery>
+          <Where>
+            <And>
+              <Eq><FieldRef Name="weTaskStatus" /><Value Type="Text">Not Started</Value></Eq>
+              <IsNull><FieldRef Name="qmMailCounter" /></IsNull>
+            </And>
+          </Where>
+        </camlQuery>
+        <action type="SpItemSetFieldsAction" listUrl="{phUrlWorkflowTasks}" itemId="{itTasks.ListItem.Id}" incrementVersion="false" eventsActivated="false" fieldName1="qmMailCounter" value1="0" />
+      </iterator>
+    </function>
+    <function id="CreateMailEvents" trigger="" qmMailCounter="" taskAge="">
+      <action type="ComputeDateTimeAction" placeholderName="phCheckDate">
+        <computeDateTime initialDateTime="{System.Now}">
+          <subtractDays>
+            <value value="{CreateMailEvents.taskAge}" />
+          </subtractDays>
+        </computeDateTime>
+      </action>
+      <action type="WriteErrorAction" text="Function {CreateMailEvents.trigger} check tasks before {phCheckDate.ISO8601} in '{phUrlWorkflowTasks}'" />
+      <!-- Alle User bzw. gruppen aus der Liste MailQueue ermitteln -->
+      <action type="SetPlaceholderAction" placeholderName="phUsersList" value="|" scope="global"/>
+      <iterator type="SpListQueryItemsIterator" id="itTasks" listUrl="{phUrlWorkflowTasks}" searchSubfolders="true" skipFolders="true">
+        <camlQuery>
+          <Where>
+            <And>
+              <Lt><FieldRef Name='Created' /><Value Type='DateTime'>{phCheckDate.ISO8601}</Value></Lt>
+              <And>
+                <Eq><FieldRef Name="Status" /><Value Type="Text">Not Started</Value></Eq>
+                <Lt><FieldRef Name="qmMailCounter" /><Value Type='Number'>{CreateMailEvents.qmMailCounter}</Value></Lt>
+              </And>
+            </And>
+          </Where>
+        </camlQuery>
+        <action type="WriteErrorAction" text="Process task '{itTasks.ListItem.Id}'" />
+        <!-- Mail Event erzeugen -->
+        <action type="SpItemCreateAction" listUrl="{phUrlMailEvents}" eventsActivated="true" fieldName1="Title" value1="{CreateMailEvents.trigger}" fieldName2="ItemId" value2="{itTasks.ListItem.Id}" fieldName3="ListUrl" value3="{phUrlWorkflowTasks}" fieldName4="ParentItemId" value4="{itTasks.ListItem.Id}" fieldName5="ParentListUrl" value5="{phUrlWorkflowTasks}" />
+        <action type="SpItemSetFieldsAction" listUrl="{phUrlWorkflowTasks}" itemId="{itTasks.ListItem.Id}" incrementVersion="false" eventsActivated="false" fieldName1="qmMailCounter" value1="{CreateMailEvents.qmMailCounter}" />
+      </iterator>
+    </function>
+  </functions>
+  <tasks>
+    <task id="Reminder" onError="abort">
+      <function id="SetMailCounter0" /> 
+			<function id="CreateMailEvents" trigger="Timer Job Task Reminder 1" qmMailCounter="1" taskAge="7" />
+			<function id="CreateMailEvents" trigger="Timer Job Task Escalation 1" qmMailCounter="2" taskAge="14" />
+    </task>
+  </tasks>
+</tasksConfiguration>
