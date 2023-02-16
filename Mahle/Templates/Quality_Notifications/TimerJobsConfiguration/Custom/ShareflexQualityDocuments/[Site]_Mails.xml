@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!--SCRIPT: [Site]_Mails-->
+<tasksConfiguration>
+
+	<placeholdersGenerators>
+		<placeholdersGenerator type="StandardPlaceholdersGenerator" id="qmStandardPlaceholders" dateTimeInformation="true" />
+		<placeholdersGenerator type="CsomPlaceholdersGenerator" id="qmSharepointPlaceholders" UserFieldInformation="true" ListItemInformation="true" ListItemUrls="true" ListItemFields="true" UserObject="true" WebInformation="false" FileInformation="true" />
+		<!-- REVIEW: FileSystemPlaceholdersGenerator not implemented for O365 -->
+		<!-- <placeholdersGenerator type="FileSystemPlaceholdersGenerator" id="FsPlaceholders" FileInformation="true" /> -->
+	</placeholdersGenerators>
+
+	<!-- CONNECTIONS -->
+	<connections>
+		<!-- <connection type="SqlServerConnection" id="SqlSynchronizationConnection" connectionString="Server=[SERVER_NAME];Database=Baf;Trusted_Connection=True;" /> -->
+	</connections>
+
+	<!-- LOGGERS -->
+	<loggers>
+		<logger type="CsomListLogger" id="CsomListLog" logListUrl="{MasterBaf.LogsListUrl}" logLevel="Warning" />
+	</loggers>
+
+	<!-- SYNCHRONIZERS -->
+	<synchronizers>
+		<synchronizer type="InProcessSynchronizer" id="InProcessSynchronizer" timeOut="300000" fallBackSynchronizer="" />
+	</synchronizers>
+
+	<!-- PLACEHOLDERS -->
+	<placeholders>
+
+		<!-- Site Collection URL -->
+		<placeholder key="phSiteUrl" value="[phSiteUrl]" />
+		<placeholder key="phWebAppUrl" value="[phWebAppUrl]" />
+
+		<!-- Language -->
+		<placeholder key="Web.Language" value="[LCID]" />
+
+		<!-- Record -->
+		<placeholder key="phUrlRecords" value="{phSiteUrl}/Workspace/Lists/Records" />
+
+		<!-- Workflow -->
+		<placeholder key="phUrlWorkflows" value="{phSiteUrl}/Workspace/Lists/pscTriggeredWorkflows" />
+		<placeholder key="phUrlWorkflowTasks" value="{phSiteUrl}/Lists/ShareflexFlowWorkflowTasks" />
+		<placeholder key="phUrlBreTasks" value="{phSiteUrl}/Workspace/Lists/BreTasks" />
+
+		<!-- New -->
+		<placeholder key="phUrlDocumentsNew" value="{phSiteUrl}/Workspace/DocumentsNew" />
+
+		<!-- Edit -->
+		<placeholder key="phUrlDocumentsEdit" value="{phSiteUrl}/Workspace/DocumentsEdit" />
+		<placeholder key="phUrlDocumentsEditPdf" value="{phSiteUrl}/Workspace/DocumentsEditPdf" />
+		<placeholder key="phUrlAppDocsEdit" value="{phSiteUrl}/Workspace/Lists/ApplicableDocumentsEdit" />
+		<placeholder key="phUrlAttachmentsEdit" value="{phSiteUrl}/Workspace/AttachmentsEdit" />
+
+		<!-- Valid -->
+		<placeholder key="phUrlDocumentsValid" value="{phSiteUrl}/Workspace/DocumentsValid" />
+		<placeholder key="phUrlAppDocsValid" value="{phSiteUrl}/Workspace/Lists/ApplicableDocumentsValid" />
+		<placeholder key="phUrlAttachmentsValid" value="{phSiteUrl}/Workspace/AttachmentsValid" />
+
+		<!-- Published -->
+		<placeholder key="phUrlDocumentsPublished" value="{phSiteUrl}/Documents" />
+		<placeholder key="phUrlDocumentsPublishedPdf" value="{phSiteUrl}/DocumentsPdf" />
+		<placeholder key="phUrlAppDocsPublished" value="{phSiteUrl}/Lists/ApplicableDocuments" />
+		<placeholder key="phUrlAttachmentsPublished" value="{phSiteUrl}/Attachments" />
+
+		<!-- Invalid -->
+		<placeholder key="phUrlDocumentsInvalid" value="{phSiteUrl}/Workspace/DocumentsInvalid" />
+
+		<!-- Others -->
+		<placeholder key="phUrlFilters" value="{phSiteUrl}/Lists/Filters" />
+		<placeholder key="phUrlFavorites" value="{phSiteUrl}/Lists/Favorites" />
+		<placeholder key="phUrlTemplates" value="{phSiteUrl}/Administration/Templates" />
+		<placeholder key="phUrlWordConversionInput" value="{phSiteUrl}/Administration/WordConversionInput" />
+		<placeholder key="phUrlWordConversionOutput" value="{phSiteUrl}/Administration/WordConversionOutput" />
+
+		<!-- Set Permissions -->
+		<placeholder key="phUrlPermissionSetPrio0" value="{phSiteUrl}/Administration/Lists/PermissionSetPrio0" comment="Part of Shareflex Permissions" />
+		<placeholder key="phUrlPermissionSetPrio1" value="{phSiteUrl}/Administration/Lists/PermissionSetPrio1" comment="Part of Shareflex Permissions" />
+		<placeholder key="phUrlPermissionSetPrio2" value="{phSiteUrl}/Administration/Lists/PermissionSetPrio2" />
+		<placeholder key="phUrlPermissionSetPrio3" value="{phSiteUrl}/Administration/Lists/PermissionSetPrio3" />
+
+		<!-- Mails -->
+		<placeholder key="phUrlMailQueue" value="{phSiteUrl}/Administration/Lists/MailQueue" />
+		<placeholder key="phUrlMailTracking" value="{phSiteUrl}/Administration/Lists/MailTracking" />
+		<placeholder key="phUrlMailTemplates" value="{phSiteUrl}/Administration/Lists/MailTemplates" />
+		<placeholder key="phUrlMailEvents" value="{phSiteUrl}/Administration/Lists/MailEvents" />
+		<placeholder key="phUrlMailImmediate" value="{phSiteUrl}/Administration/Lists/MailImmediate" />
+
+		<placeholder key="phCustom_ImportFolder" value="" />
+
+
+	</placeholders>
+
+	<!--INCLUDES-->
+	<includes>
+		<include name="qmWebApp_TimerJob_[Site]_Mails" />
+	</includes>
+
+	<!--PLACEHOLDERS-->
+	<placeholders>
+
+	</placeholders>
+
+</tasksConfiguration>
+<!--SCRIPT: [Site]_Mails-->
